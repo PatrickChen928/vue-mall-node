@@ -5,7 +5,7 @@ const userSchema = new mongoose.Schema({
     "avatar": String,
     "userName": String,
     "userPwd": String,
-    "orderList": Array,
+   /* "orderList": Array,
     "cartList": [
         {
             "productId": String,
@@ -24,6 +24,6 @@ const userSchema = new mongoose.Schema({
             "tel": Number,
             "isDefault": Boolean
         }
-    ]
+    ]*/
 })
-module.exports = mongoose.model('User', userSchema)
+module.exports = mongoose.model('User', userSchema, 'userCollection')

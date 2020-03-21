@@ -1,15 +1,16 @@
-// 初始化数据库
-const getGoods = require('./getGoods')
-const getAdmin = require('./admin');
+// 初始化商品
+const initData = require('./data');
+//启动数据库
+const db = require('../mongodb/db');
+const Good = require('../models/goods');
+initData.forEach(v => {
+  v.isHot = true;
 
-;(async () => {
-    await getGoods();
-    await getAdmin();
-    process.on('exit', (code) => {
-        console.log(`数据抓取完毕`);
-    });
-    process.exit()
-})()
-
-
-
+});
+Good.create(...initData, (err) => {
+  if (!err) {
+    console.log('商品数据初始成功');
+  } else {
+    console.log('商品数据初始失败');
+  }
+});

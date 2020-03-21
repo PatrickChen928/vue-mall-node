@@ -2,15 +2,56 @@ const express     = require('express');
 const router      = express.Router()
 const Good        = require('../models/goods')
 const User        = require('../models/user')
-const superagent  = require('superagent')
 
+//获取热门数据
+router.get('/hotList', (req, res) => {
+  try {
+    Good.find({isHot: true, goodsType: 1}, null, {limit: 4}, (err, men) => {
+      if (!err) {
+        Good.find({isHot: true, goodsType: 2}, null, {limit: 4}, (err, women) => {
+          if (!err) {
+            let hot = men.slice(0, 2).concat(women.slice(0, 2));
+            res.json({
+              status: '0',
+              msg: '请求成功',
+              result: {
+                hot,
+                men,
+                women
+              }
+            })
+          } else {
+            res.json({
+              status: '1',
+              msg: err,
+              result: null
+            })
+          }
+        });
+      } else {
+        res.json({
+          status: '1',
+          msg: err,
+          result: null
+        })
+      }
+    });
+  } catch (err) {
+    res.json({
+      status: '1',
+      msg: err.message,
+      result: null
+    })
+  }
+});
 // 商品列表
-router.get('/computer',  (req, res, next) => {
+router.get('/list',  (req, res, next) => {
     let sort = req.query.sort || '';
     let page = +req.query.page || 1;
     let pageSize = +req.query.pageSize || 20;
     let priceGt = +req.query.priceGt || ''; // 大于
     let priceLte = +req.query.priceLte || ''; // 小于
+    let goodsType = +req.query.goodsType || ''; // 商品类型
     let skip = (page - 1) * pageSize;//跳过多少条
     let params = {}
     if (priceGt || priceLte) {
@@ -35,7 +76,9 @@ router.get('/computer',  (req, res, next) => {
             }
         }
     }
-
+    if (goodsType) {
+      params.goodsType = goodsType;
+    }
     let productModel = Good.find(params).skip(skip).limit(pageSize);
     // 1 升序 -1 降序
     sort && productModel.sort({'salePrice': sort})
@@ -57,7 +100,55 @@ router.get('/computer',  (req, res, next) => {
             })
         }
     })
-})
+});
+
+// 新增商品
+router.post('/add',  async (req, res) => {
+  let userId = req.cookies.userId;
+  let data = req.body;
+  if (userId) {
+    try {
+      const userDoc = await User.findOne({userId})
+      if (userDoc) {
+        Good.create(data, function (err, data) {
+          if (err) {
+            res.json({
+              code: '1',
+              message: '服务器异常',
+              content: null
+            });
+          } else {
+            res.json({
+              code: '0',
+              message: '请求成功',
+              content: {}
+            });
+          }
+        });
+      } else {
+        res.json({
+          status: 1,
+          msg: '用户不存在',
+          result: ''
+        })
+      }
+
+    } catch (err) {
+      res.json({
+        status: 1,
+        msg: err.message,
+        result: ''
+      })
+    }
+
+  } else {
+    res.json({
+      status: 1,
+      msg: '用户未登录',
+      result: ''
+    })
+  }
+});
 
 // 加入购物车
 router.post('/addCart',  async (req, res) => {
@@ -346,7 +437,7 @@ router.get('/productHome', function (req, res) {
 // 商品信息
 router.get('/productDet', function (req, res) {
     let productId = req.query.productId
-    Good.findOne({productId}, (err, doc) => {
+    Good.findOne({_id: productId}, (err, doc) => {
         if (err) {
             res.json({
                 status: '1',
@@ -354,8 +445,9 @@ router.get('/productDet', function (req, res) {
                 result: ''
             })
         } else {
+          doc.limit_num = doc.limit_num || 99
             res.json({
-                status: '1',
+                status: 0,
                 msg: 'suc',
                 result: doc
             })

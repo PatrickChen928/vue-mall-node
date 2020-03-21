@@ -21,7 +21,6 @@ router.post('/login', async (req, res) => {
 
     let {userName, userPwd} = req.body;
     const doc = await User.findOne({userName, userPwd});
-
     try {
         if (doc) {
             const {userId, name, avatar} = doc
@@ -33,8 +32,9 @@ router.post('/login', async (req, res) => {
                 status: '0',
                 msg: '登陆成功',
                 result: {
-                    name,
-                    avatar
+                  name,
+                  avatar,
+                  userId
                 }
             })
         } else {
@@ -215,8 +215,8 @@ router.post('/cartList', async (req, res) => {
             res.json({
                 status: '1',
                 msg: "suc",
-                count: cartList.length,
-                result: cartList
+                count: 0,
+                result: 0
             })
         } else {
             res.json({
