@@ -15,7 +15,6 @@ router.post('/payMent', async (req, res) => {
     if (userId) {
       // 需要地址id 以及 订单价格
       if (addressId && orderTotal) {
-        let userDoc = await User.findOne({userId});
         let goodsList = [];
         let userAddress = await Address.findById(addressId);
         const cartList = await Car.find({userId, checked: '1'});

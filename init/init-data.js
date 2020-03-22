@@ -13,4 +13,5 @@ Good.create(...initData, (err) => {
   } else {
     console.log('商品数据初始失败');
   }
+  db.close();
 });

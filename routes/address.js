@@ -142,7 +142,7 @@ router.post('/update', async (req, res) => {
           //将默认地址取消
           await Address.update({isDefault: true},{isDefault: false});
         }
-        Address.update({_id: data._id}, data);
+        await Address.update({_id: data._id}, data);
         res.json({
           status: 0,
           msg: '操作成功',

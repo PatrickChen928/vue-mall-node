@@ -4,26 +4,6 @@ const userSchema = new mongoose.Schema({
     "name": String,
     "avatar": String,
     "userName": String,
-    "userPwd": String,
-   /* "orderList": Array,
-    "cartList": [
-        {
-            "productId": String,
-            "productImg": String,
-            "productName": String,
-            "checked": String,
-            "productNum": Number,
-            "productPrice": Number
-        }
-    ],
-    'addressList': [
-        {
-            "addressId": Number,
-            "userName": String,
-            "streetName": String,
-            "tel": Number,
-            "isDefault": Boolean
-        }
-    ]*/
+    "userPwd": String
 })
 module.exports = mongoose.model('User', userSchema, 'userCollection')

@@ -137,13 +137,15 @@ router.post('/addBatch', async (req, res) => {
             goodDocs.forEach(v => {
               let obj = productMsg.find(v1 => v1.productId == v._id);
               goodsDetail.push({
+                userId,
+                checked: '1',
                 productPrice: v.salePrice,
                 productName: v.productName,
                 productImg: v.productImageBig,
                 ...obj
               })
             });
-            if (doc) {
+            if (doc && doc.length > 0) {
               //只加入购物车中没有的数据
               let needAdd = [];
               goodsDetail.forEach(v => {
