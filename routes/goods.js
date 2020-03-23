@@ -6,9 +6,9 @@ const User        = require('../models/user')
 //获取热门数据
 router.get('/hotList', (req, res) => {
   try {
-    Good.find({isHot: true, goodsType: 1}, null, {limit: 4}, (err, men) => {
+    Good.find({isHot: true, goodsType: 1, isUp: true}, null, {limit: 4}, (err, men) => {
       if (!err) {
-        Good.find({isHot: true, goodsType: 2}, null, {limit: 4}, (err, women) => {
+        Good.find({isHot: true, goodsType: 2, isUp: true}, null, {limit: 4}, (err, women) => {
           if (!err) {
             let hot = men.slice(0, 2).concat(women.slice(0, 2));
             res.json({
@@ -45,13 +45,14 @@ router.get('/hotList', (req, res) => {
   }
 });
 // 商品列表
-router.get('/list',  (req, res, next) => {
+router.get('/list', async (req, res, next) => {
     let sort = req.query.sort || '';
     let page = +req.query.page || 1;
     let pageSize = +req.query.pageSize || 20;
     let priceGt = +req.query.priceGt || ''; // 大于
     let priceLte = +req.query.priceLte || ''; // 小于
     let goodsType = +req.query.goodsType || ''; // 商品类型
+    let all = +req.query.all || ''; // 商品类型
     let skip = (page - 1) * pageSize;//跳过多少条
     let params = {}
     if (priceGt || priceLte) {
@@ -79,9 +80,15 @@ router.get('/list',  (req, res, next) => {
     if (goodsType) {
       params.goodsType = goodsType;
     }
-    let productModel = Good.find(params).skip(skip).limit(pageSize);
+    let countParams = {};
+    if (!all) {
+      params.isUp = true;
+      countParams.isUp = true;
+    }
+    let count = await Good.count(countParams);
+    let productModel = Good.find({...params}).skip(skip).limit(pageSize);
     // 1 升序 -1 降序
-    sort && productModel.sort({'salePrice': sort})
+    sort && productModel.sort({'salePrice': sort, createTime: '1'});
     productModel.exec(function (err, doc) {
         if (err) {
             res.json({
@@ -95,6 +102,7 @@ router.get('/list',  (req, res, next) => {
                 msg: 'successful',
                 result: {
                     count: doc.length,
+                    total: count,
                     data: doc
                 }
             })
@@ -110,21 +118,175 @@ router.post('/add',  async (req, res) => {
     try {
       const userDoc = await User.findOne({userId})
       if (userDoc) {
-        Good.create(data, function (err, data) {
+        Good.create({...data, isUp: true}, function (err, data) {
           if (err) {
             res.json({
-              code: '1',
+              status: '1',
               message: '服务器异常',
               content: null
             });
           } else {
             res.json({
-              code: '0',
+              status: '0',
               message: '请求成功',
               content: {}
             });
           }
         });
+      } else {
+        res.json({
+          status: 1,
+          msg: '用户不存在',
+          result: ''
+        })
+      }
+
+    } catch (err) {
+      res.json({
+        status: 1,
+        msg: err.message,
+        result: ''
+      })
+    }
+
+  } else {
+    res.json({
+      status: 1,
+      msg: '用户未登录',
+      result: ''
+    })
+  }
+});
+// 编辑商品
+router.post('/update',  async (req, res) => {
+  let userId = req.cookies.userId;
+  let data = req.body;
+  if (userId) {
+    try {
+      const userDoc = await User.findOne({userId})
+      if (userDoc) {
+        Good.findByIdAndUpdate(data._id, data, function (err, data) {
+          if (err) {
+            res.json({
+              status: '1',
+              message: '服务器异常',
+              content: null
+            });
+          } else {
+            res.json({
+              status: '0',
+              message: '请求成功',
+              content: {}
+            });
+          }
+        })
+      } else {
+        res.json({
+          status: 1,
+          msg: '用户不存在',
+          result: ''
+        })
+      }
+
+    } catch (err) {
+      res.json({
+        status: 1,
+        msg: err.message,
+        result: ''
+      })
+    }
+
+  } else {
+    res.json({
+      status: 1,
+      msg: '用户未登录',
+      result: ''
+    })
+  }
+});
+//删除
+router.post('/del', async (req, res) => {
+  let userId = req.cookies.userId;
+  let data = req.body;
+  if (userId) {
+    try {
+      const userDoc = await User.findOne({userId})
+      if (userDoc) {
+        Good.findByIdAndRemove(data._id, (err) => {
+          if (!err) {
+            res.json({
+              status: 0,
+              msg: '',
+              result: ''
+            })
+          } else {
+            res.json({
+              status: 1,
+              msg: err.message,
+              result: ''
+            })
+          }
+        })
+      } else {
+        res.json({
+          status: 1,
+          msg: '用户不存在',
+          result: ''
+        })
+      }
+
+    } catch (err) {
+      res.json({
+        status: 1,
+        msg: err.message,
+        result: ''
+      })
+    }
+
+  } else {
+    res.json({
+      status: 1,
+      msg: '用户未登录',
+      result: ''
+    })
+  }
+});
+
+//上下架
+router.post('/upDown', async (req, res) => {
+  let userId = req.cookies.userId;
+  let data = req.body;
+  if (userId) {
+    try {
+      const userDoc = await User.findOne({userId})
+      if (userDoc) {
+        Good.findById(data._id, (err, data) => {
+          if (!err) {
+            console.log(data);
+            let isUp = data.isUp;
+            Good.findByIdAndUpdate(data._id, {isUp: !isUp}, (err1) => {
+              if (!err1) {
+                res.json({
+                  status: 0,
+                  msg: '',
+                  result: ''
+                })
+              } else {
+                res.json({
+                  status: 1,
+                  msg: err.message,
+                  result: ''
+                })
+              }
+            });
+          } else {
+            res.json({
+              status: 1,
+              msg: err.message,
+              result: ''
+            })
+          }
+        })
       } else {
         res.json({
           status: 1,
@@ -353,86 +515,6 @@ router.post('/addCartBatch',  async (req, res) => {
     }
 
 })
-
-let czUrl = 'http://www.smartisan.com/product/home'
-
-// 转发锤子接口
-router.get('/productHome', function (req, res) {
-    superagent.get(czUrl).end(function (err, res1) {
-        if (err) {
-            res.json({
-                status: '1',
-                msg: err.message,
-                result: ''
-            })
-        } else {
-            let result = JSON.parse(res1.text)
-            let home_hot = result.data.home_hot || ['100031816', '100032201', '100025104', '100023501'];
-            let home_floors = result.data.home_floors
-            let pId = [], // 保存总商品id
-                hotId = [], // 热门id
-                floorsId = [],// 官方精选 品牌精选
-                floorsList = [];
-            home_hot.forEach(item => {
-                hotId.push(item.spu_id + '01')
-                pId.push(item.spu_id + '01')
-            })
-            home_floors.forEach((item, i) => {
-                let tab_items = item.tabs[0].tab_items // 
-                floorsId[i] = []
-                floorsList[i] = {};
-                floorsList[i].tabs = [];
-                floorsList[i].image = home_floors[i].tabs[0].tab_items[0]
-                floorsList[i].title = home_floors[i].title
-                tab_items.forEach(tab => {
-                    let id = tab.spu_id
-                    if (id) {
-                        floorsId[i].push(id + '01') // 存储id
-                        pId.push(id + '01')
-                    }
-                })
-            })
-            Good.find({productId: {$in: pId}}, (goodsErr, goodsDoc) => {
-                if (goodsErr) {
-                    res.json({
-                        status: '1',
-                        msg: goodsErr.message,
-                        result: ''
-                    })
-                } else {
-                    let hotList = [];
-                    goodsDoc.forEach(item => {
-                        let itemId = item.productId;
-                        hotId.forEach(id => {
-                            if (itemId === id) {
-                                hotList.push(item)
-                            }
-                        })
-                        floorsId.forEach((fitem, i) => {
-                            fitem.forEach(fid => {
-                                if (itemId === fid) {
-                                    floorsList[i].tabs.push(item)
-                                }
-                            })
-                        })
-                    })
-
-
-                    res.json({
-                        status: '0',
-                        msg: 'suc',
-                        result: {
-                            "home_hot": hotList,
-                            'home_floors': floorsList
-                        }
-                    })
-                }
-            })
-
-
-        }
-    })
-});
 
 // 商品信息
 router.get('/productDet', function (req, res) {

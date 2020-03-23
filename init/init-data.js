@@ -5,7 +5,7 @@ const db = require('../mongodb/db');
 const Good = require('../models/goods');
 initData.forEach(v => {
   v.isHot = true;
-
+  v.isUp = true;
 });
 Good.create(...initData, (err) => {
   if (!err) {

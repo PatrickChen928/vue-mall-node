@@ -12,6 +12,14 @@ const produtSchema = new mongoose.Schema({
   'productMsg': Object,
   'detail': String,
   'goodsType': String,
-  'isHot': Boolean
-})
+  'isHot': Boolean,
+  'isUp': {
+    type: Boolean,
+    detail: true
+  },
+  'createTime': {
+    type: Date,
+    default: new Date()
+  }
+});
 module.exports = mongoose.model('Good', produtSchema, 'goodCollection');
